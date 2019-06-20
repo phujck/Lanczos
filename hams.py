@@ -107,7 +107,15 @@ class system:
         else:
             phi = self.phi(current_time)
         #note I've swapped tril and triu here, on the basis that h1_ij = c^dag_i H_1 c_j and we have e^(-i*phi) c^dag_j+1 c_j+h.c.
-        return self.t *np.exp(1j * phi) * np.tril(self.h1) + self.t* np.exp(-1j * phi) * np.triu(self.h1)
+        # ghb bugfix: Deal with boundary conditions correctly.
+        h_forwards = np.triu(self.h1)
+        h_forwards[0,-1] = 0.0
+        h_forwards[-1,0] = self.h1[-1,0]
+        h_backwards = np.tril(self.h1)
+        h_backwards[-1,0] = 0.0
+        h_backwards[0,-1] = self.h1[0,-1]
+        #return self.t *np.exp(1j * phi) * np.tril(self.h1) + self.t* np.exp(-1j * phi) * np.triu(self.h1)
+        return self.t *np.exp(1j * phi) * h_backwards + self.t* np.exp(-1j * phi) * h_forwards
 
     full_1e_ham = apply_hhg_pert
 
@@ -119,7 +127,17 @@ class system:
             phi_2 = self.phi(current_time + delta / 2)
             phi_3 = self.phi(current_time + delta)
             prefactor = self.t*(np.exp(1j * phi_1) + 4 * np.exp(1j * phi_2) + np.exp(1j * phi_3)) / 6
-        return prefactor * np.tril(self.h1) + np.conjugate(prefactor) * np.triu(self.h1)
+
+        # ghb bugfix: Deal with boundary conditions correctly.
+        h_forwards = np.triu(self.h1)
+        h_forwards[0,-1] = 0.0
+        h_forwards[-1,0] = self.h1[-1,0]
+        h_backwards = np.tril(self.h1)
+        h_backwards[-1,0] = 0.0
+        h_backwards[0,-1] = self.h1[0,-1]
+
+        #return prefactor * np.tril(self.h1) + np.conjugate(prefactor) * np.triu(self.h1)
+        return prefactor * h_backwards + np.conjugate(prefactor) * h_forwards
 
     full_1e_ham_simpson = apply_hhg_pert_simpson
 
